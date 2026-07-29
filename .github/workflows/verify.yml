@@ -1,0 +1,23 @@
+name: Score submissions
+on:
+  pull_request:
+    paths: ['submissions/**']
+  workflow_dispatch:
+    inputs:
+      file: {description: 'points JSON to score', required: false, default: 'examples/example_grid5.json'}
+permissions:
+  contents: read
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.x'}
+      - name: Score
+        run: |
+          set +e
+          echo "## Unit distances — scores" >> "$GITHUB_STEP_SUMMARY"; echo "" >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then files="${{ inputs.file }}"; else files=$(ls submissions/*.json 2>/dev/null); fi
+          [ -z "$files" ] && { echo "No submission JSON." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          for f in $files; do out=$(python3 check.py "$f"); echo "- \`$f\` → $out" >> "$GITHUB_STEP_SUMMARY"; done
